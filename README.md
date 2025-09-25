@@ -358,3 +358,25 @@ DevContainer環境では以下のURLでMinIOの管理画面にアクセスでき
 - **MinIOサーバー** が Docker Compose 経由で自動起動
 - **ポートフォワード** が自動設定（9000: API, 9001: Console）
 - **VSCode拡張機能** (Python関連) が自動インストール
+
+
+## **MinIO 5月破壊的変更に関する懸念事項**
+
+MinIOは2025年5月24日のRELEASE.2025-05-24T17-08-30Zで大規模な破壊的変更を実施しました。コミュニティ版からWebUI管理機能やOIDC/LDAP認証が削除され、基本的なオブジェクトブラウザーのみに制限されました。また、mcコマンドラインツールも商用版（AIStor）と分離され、コミュニティ版はセキュリティ修正のみのメンテナンスモードに移行しています。現在の環境では古いバージョンのmcを使用しているため、将来的なサーバーとクライアント間のバージョン互換性問題や、セキュリティサポート終了のリスクが懸念されます。
+
+**参考リンク：**
+
+1. **公式リリースノート**
+   https://github.com/minio/minio/releases/tag/RELEASE.2025-05-24T17-08-30Z
+
+2. **コミュニティディスカッション（信頼問題）**
+   https://github.com/minio/minio/discussions/21326
+
+3. **技術記事（変更内容詳細）**
+   https://linuxiac.com/minio-steering-users-toward-paid-subscriptions/
+
+4. **OpenMaxIOフォーク（代替手段）**
+   https://github.com/OpenMaxIO/openmaxio-object-browser
+
+5. **MinIO公式mcドキュメント（バージョン互換性）**
+   https://docs.min.io/community/minio-object-store/reference/minio-mc.html
