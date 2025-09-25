@@ -13,6 +13,13 @@ MinIOのアクセスキーとバケットを管理するためのPythonツール
 
 ```
 .
+├── .devcontainer
+│   ├── Dockerfile           # DevContainer設定
+│   ├── compose.yml          # Docker Compose（MinIOサーバー含む）
+│   └── devcontainer.json    # VSCode DevContainer設定
+├── .env                     # 環境変数設定ファイル
+├── .gitignore
+├── .python-version
 ├── README.md
 ├── pyproject.toml
 ├── src
@@ -25,11 +32,10 @@ MinIOのアクセスキーとバケットを管理するためのPythonツール
 
 ### 必要要件
 
-- Python 3.8+
-- [uv](https://github.com/astral-sh/uv) パッケージマネージャー
-- [MinIO Client (mc)](https://min.io/docs/minio/linux/reference/minio-mc.html)
+- **Docker** と **Docker Compose**
+- **Visual Studio Code** + **Dev Containers拡張機能**
 
-### インストール
+### DevContainer環境での起動
 
 1. **リポジトリのクローン**
    ```bash
@@ -37,26 +43,25 @@ MinIOのアクセスキーとバケットを管理するためのPythonツール
    cd <repository-name>
    ```
 
-2. **依存関係のインストール**
+2. **VSCodeでDevContainerを開く**
+   - VSCodeでプロジェクトフォルダを開く
+   - `Ctrl+Shift+P` → `Dev Containers: Reopen in Container` を選択
+   - DevContainerが自動的に構築され、MinIOサーバーも同時に起動
+
+3. **依存関係のインストール**
    ```bash
+   # DevContainer内で実行
    uv sync
    ```
 
-3. **MinIO Clientのインストール**
-   ```bash
-   # Linux/macOS
-   curl https://dl.min.io/client/mc/release/linux-amd64/mc \
-     --create-dirs \
-     -o $HOME/minio-binaries/mc
-   chmod +x $HOME/minio-binaries/mc
-   export PATH=$PATH:$HOME/minio-binaries/
+### 環境の確認
 
-   # またはパッケージマネージャーを使用
-   # Ubuntu/Debian
-   wget https://dl.min.io/client/mc/release/linux-amd64/mc
-   chmod +x mc
-   sudo mv mc /usr/local/bin/
-   ```
+DevContainer起動後、以下が自動的に利用可能になります：
+
+- **Python 3.11** + **uv** + **MinIO Client (mc)** (Dockerfileで自動インストール)
+- **MinIOサーバー** (Docker Compose経由で自動起動)
+  - API: `http://localhost:9000`
+  - Web Console: `http://localhost:9001`
 
 ### 環境変数設定
 
@@ -64,6 +69,7 @@ MinIOのアクセスキーとバケットを管理するためのPythonツール
 
 ```env
 # MinIO接続情報（必須）
+# DevContainer環境では、Dockerサービス名 "minio" を使用
 MINIO_ENDPOINT=http://minio:9000
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin123
@@ -75,6 +81,10 @@ MINIO_ACCESS_KEY_NAME=minioadmin
 # バケット設定（必須 - bucket_manager使用時）
 MINIO_BUCKETS=bucket-data,bucket-logs,bucket-backup
 ```
+
+> **💡 DevContainer環境のポイント**
+> - `MINIO_ENDPOINT` は Docker Compose のサービス名 `minio` を使用
+> - MinIO Web Console は `http://localhost:9001` でアクセス可能（自動でポートフォワード）
 
 #### 環境変数説明
 
@@ -188,13 +198,23 @@ uv run src/bucket_manager.py [オプション]
 
 ### 初回セットアップ
 
-1. **環境変数の設定**
+1. **DevContainer環境の起動**
+   ```bash
+   # VSCodeでプロジェクトを開き、DevContainerで再開
+   # MinIOサーバーが自動的に起動します
+   ```
+
+2. **環境変数の設定**
    ```bash
    # .envファイルを作成・編集
    vim .env
    ```
 
-2. **接続確認とバケット作成**
+3. **MinIO Web Consoleでの確認**
+   - ブラウザで `http://localhost:9001` にアクセス
+   - ユーザー名: `minioadmin`, パスワード: `minioadmin123` でログイン
+
+4. **接続確認とバケット作成**
    ```bash
    # バケット状態確認
    uv run src/bucket_manager.py --status
@@ -203,7 +223,7 @@ uv run src/bucket_manager.py [オプション]
    uv run src/bucket_manager.py --create
    ```
 
-3. **アプリケーション用アクセスキー作成**
+5. **アプリケーション用アクセスキー作成**
    ```bash
    # アプリケーション用のアクセスキーを作成
    uv run src/access_key_manager.py --create \
@@ -246,43 +266,95 @@ uv run src/bucket_manager.py [オプション]
 
 ### よくある問題と解決方法
 
-1. **`mc` コマンドが見つからない**
+1. **DevContainerが正しく起動しない**
    ```bash
-   # mcがインストールされているか確認
-   which mc
+   # Docker Composeサービスの状態確認
+   docker-compose -f .devcontainer/compose.yml ps
    
-   # パスを通す
-   export PATH=$PATH:/path/to/mc
+   # MinIOサーバーの状態確認
+   docker-compose -f .devcontainer/compose.yml logs minio
+   
+   # コンテナの再構築
+   # VSCode: Ctrl+Shift+P → "Dev Containers: Rebuild Container"
    ```
 
 2. **MinIOサーバーに接続できない**
-   - `.env` ファイルの `MINIO_ENDPOINT` が正しいか確認
-   - MinIOサーバーが起動しているか確認
-   - ネットワーク接続を確認
+   ```bash
+   # MinIOサーバーの状態確認
+   docker-compose -f .devcontainer/compose.yml ps minio
+   
+   # MinIOヘルスチェック
+   curl -f http://localhost:9000/minio/health/live
+   
+   # .envファイルのENDPOINT設定確認
+   cat .env | grep MINIO_ENDPOINT
+   ```
 
-3. **権限エラー**
-   - `MINIO_ROOT_USER` と `MINIO_ROOT_PASSWORD` が正しいか確認
-   - MinIOの管理者権限があるアカウントを使用しているか確認
+3. **`mc` コマンドが見つからない**
+   ```bash
+   # mcがインストールされているか確認
+   which mc
+   mc --version
+   
+   # DevContainerの再構築が必要な場合があります
+   ```
 
-4. **バケット名のバリデーションエラー**
+4. **権限エラー**
+   - `.env` ファイルの `MINIO_ROOT_USER` と `MINIO_ROOT_PASSWORD` が正しいか確認
+   - Docker Composeの環境変数設定と一致しているか確認
+
+5. **バケット名のバリデーションエラー**
    - バケット名は小文字英数字、ハイフン、ピリオドのみ使用可能
    - 3-63文字の制限
    - ピリオドで開始・終了することはできない
 
-### デバッグモード
+### DevContainer固有のデバッグ
 
-詳細なエラー情報が必要な場合は、以下のように実行してください：
+1. **MinIOサーバーログの確認**
+   ```bash
+   docker-compose -f .devcontainer/compose.yml logs -f minio
+   ```
 
-```bash
-# Pythonの詳細なエラー出力を有効にする
-PYTHONPATH=src python -u src/access_key_manager.py --list
+2. **ネットワーク接続の確認**
+   ```bash
+   # DevContainer内からMinIOサーバーへの接続テスト
+   curl -I http://minio:9000
+   
+   # ポートフォワードの確認
+   curl -I http://localhost:9000
+   ```
 
-# または
-PYTHONPATH=src python -u src/bucket_manager.py --status
-```
+3. **コンテナ内でのデバッグ**
+   ```bash
+   # Pythonの詳細なエラー出力を有効にする
+   PYTHONPATH=src python -u src/access_key_manager.py --list
+   
+   # または
+   PYTHONPATH=src python -u src/bucket_manager.py --status
+   ```
+
+### MinIO Web Console
+
+DevContainer環境では以下のURLでMinIOの管理画面にアクセスできます：
+- **URL**: http://localhost:9001
+- **ユーザー名**: minioadmin
+- **パスワード**: minioadmin123
+
+ここで直接バケットやアクセスキーの管理も可能です。
 
 ## 📚 参考資料
 
 - [MinIO Documentation](https://min.io/docs/)
 - [MinIO Client (mc) Reference](https://min.io/docs/minio/linux/reference/minio-mc.html)
 - [uv Documentation](https://docs.astral.sh/uv/)
+- [VSCode Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
+- [Docker Compose](https://docs.docker.com/compose/)
+
+### DevContainer環境について
+
+このプロジェクトは **VSCode Dev Containers** を使用して、一貫した開発環境を提供します：
+
+- **Python 3.11** + **uv** + **MinIO Client** が事前インストール済み
+- **MinIOサーバー** が Docker Compose 経由で自動起動
+- **ポートフォワード** が自動設定（9000: API, 9001: Console）
+- **VSCode拡張機能** (Python関連) が自動インストール
