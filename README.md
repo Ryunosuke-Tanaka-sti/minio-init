@@ -115,6 +115,7 @@ uv run src/access_key_manager.py [オプション]
 | `--access-key <KEY>` | 作成時にアクセスキーを指定 | `uv run src/access_key_manager.py --create --access-key mykey` |
 | `--secret-key <SECRET>` | 作成時にシークレットキーを指定 | `uv run src/access_key_manager.py --create --secret-key mysecret` |
 | `--name <NAME>` | アクセスキーに名前を設定 | `uv run src/access_key_manager.py --create --name "API Key"` |
+| `--description <DESCRIPTION>` | アクセスキーに名前を設定 | `uv run src/access_key_manager.py --create --description "API DESCRIPTION"` |
 | `--delete <KEY>` | 指定のアクセスキーを削除 | `uv run src/access_key_manager.py --delete mykey` |
 | `--info <KEY>` | 指定のアクセスキー詳細を表示 | `uv run src/access_key_manager.py --info mykey` |
 
